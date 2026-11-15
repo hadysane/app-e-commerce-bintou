@@ -45,7 +45,7 @@ function ProductPage() {
   const { product } = Route.useLoaderData();
   const { add } = useCart();
   const single = product.sizes.length === 1;
-  const [size, setSize] = useState<string | null>(single ? product.sizes[0] : null);
+  const [size, setSize] = useState<string | null>(single ? (product.sizes[0] ?? null) : null);
   const [error, setError] = useState(false);
   const category = CATEGORIES.find((c) => c.value === product.category)!;
   const related = PRODUCTS.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
