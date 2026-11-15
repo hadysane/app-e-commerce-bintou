@@ -72,6 +72,65 @@ export type Database = {
           size?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_product_slug_fkey"
+            columns: ["product_slug"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string
+          fabric: string
+          image_path: string | null
+          is_new: boolean
+          name: string
+          position: number
+          price_cents: number
+          short: string
+          sizes: string[]
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string
+          fabric?: string
+          image_path?: string | null
+          is_new?: boolean
+          name: string
+          position?: number
+          price_cents: number
+          short?: string
+          sizes: string[]
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string
+          fabric?: string
+          image_path?: string | null
+          is_new?: boolean
+          name?: string
+          position?: number
+          price_cents?: number
+          short?: string
+          sizes?: string[]
+          slug?: string
+          updated_at?: string
+        }
         Relationships: []
       }
       team_invites: {

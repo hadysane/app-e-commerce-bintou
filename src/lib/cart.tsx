@@ -1,12 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { addLine, cartCount, cartSubtotal, setLineQty, type CartLine } from "./cart-logic";
+import { addLine, cartCount, setLineQty, type CartLine } from "./cart-logic";
 
 const STORAGE_KEY = "bintou-cart";
 
 type CartContextValue = {
   lines: CartLine[];
   count: number;
-  subtotal: number;
   isOpen: boolean;
   setOpen: (open: boolean) => void;
   add: (slug: string, size: string) => void;
@@ -39,7 +38,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => ({
       lines,
       count: cartCount(lines),
-      subtotal: cartSubtotal(lines),
       isOpen,
       setOpen,
       add: (slug, size) => {

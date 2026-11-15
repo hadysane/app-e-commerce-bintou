@@ -1,34 +1,8 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-
-## What Lovable manages
-
-Rules outside this block are the project's own. Change the pieces below in
-Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
-connected, `send_message` asks Lovable to do it; otherwise ask the user to
-use the editor.
-
-- **Database.** Do not add or edit `supabase/migrations/` or `drizzle/`.
-  Ask Lovable to change the schema.
-- **Generated files.** Do not edit a file whose header says it is automatically
-  generated.
-- **AI gateway.** Keep model calls on Lovable's gateway, and keep
-  `LOVABLE_API_KEY` out of browser code.
-- **Connectors.** Lovable provides native connectors. `list_connectors` shows
-  which are enabled; `add_connector` only returns the dashboard link. When a
-  connector is enabled, calls go through the connector gateway and need
-  `LOVABLE_API_KEY`. When Lovable does not provide one, users can bring their
-  own key and store it in Secrets.
-- **Secrets.** Lovable manages them. Do not put secret values in the repo.
-<!-- LOVABLE:END -->
-
 ## Project rules
 
-- Catalog lives in `src/lib/products.ts` (static data, no backend yet); cart state is client-side in `src/lib/cart.tsx` persisted to localStorage, with pure logic in `src/lib/cart-logic.ts` — keeps the shop working without a database or third-party store.
+- The project is no longer connected to Lovable: the code, the Supabase project and the secrets are managed here.
+- Catalogue lives in the Supabase `products` table, photos in the public `product-images` Storage bucket; both are edited from `/admin` (Produits tab). `src/lib/products.ts` only holds types and helpers, with no product data.
+- Stock is per product and size in `product_stock`, linked to `products.slug`. Cart state is client-side in `src/lib/cart.tsx` persisted to localStorage, with pure logic in `src/lib/cart-logic.ts` that takes the catalogue as a parameter.
+- Schema changes go in a new file under `supabase/migrations/` (never edit an applied migration), then `npm run db:push` and `npm run db:types` to regenerate `src/integrations/supabase/types.ts`.
+- Secrets (`SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`) go in `.env` or `.env.local`, both git-ignored; `.env.example` lists every variable. Only `VITE_`-prefixed values reach the browser.
+- Sign-in is email + password via Supabase Auth. The first account created becomes admin; others get access through invites in `/admin`.

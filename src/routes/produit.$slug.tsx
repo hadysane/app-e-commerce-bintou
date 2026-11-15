@@ -2,25 +2,29 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { stockQueryOptions } from "@/lib/stock";
+import { catalogQueryOptions, stockQueryOptions } from "@/lib/stock";
 import { stockFor } from "@/lib/cart-logic";
 import { ArrowLeft, Truck, Scissors, RefreshCw } from "lucide-react";
-import { CATEGORIES, PRODUCTS, formatPrice, getProduct } from "@/lib/products";
+import { CATEGORIES, findProduct, formatPrice } from "@/lib/products";
 import { useCart } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
+import { ProductImage } from "@/components/product-image";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/produit/$slug")({
   loader: async ({ params, context }) => {
-    const product = getProduct(params.slug);
+    const products = await context.queryClient.ensureQueryData(catalogQueryOptions);
+    const product = findProduct(products, params.slug);
     if (!product) throw notFound();
     await context.queryClient.ensureQueryData(stockQueryOptions).catch(() => undefined);
     return { product };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Article introuvable — Bintou" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "Article introuvable — Bintou" }, { name: "robots", content: "noindex" }],
+      };
     }
     const { product } = loaderData;
     return {
@@ -57,7 +61,8 @@ function ProductPage() {
   const selectedLeft = size ? left(size) : 0;
   const [error, setError] = useState(false);
   const category = CATEGORIES.find((c) => c.value === product.category)!;
-  const related = PRODUCTS.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
+  const { data: products = [] } = useQuery(catalogQueryOptions);
+  const related = products.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
 
   return (
     <div className="mx-auto max-w-7xl px-5 pt-8 md:px-8">
@@ -67,7 +72,7 @@ function ProductPage() {
 
       <div className="mt-6 grid gap-10 md:grid-cols-2 md:gap-16">
         <div className="overflow-hidden rounded-sm bg-muted">
-          <img src={product.image} alt={product.name} width={768} height={1024} className="aspect-[3/4] w-full object-cover" />
+          <ProductImage src={product.image} alt={product.name} className="aspect-[3/4] w-full" />
         </div>
 
         <div className="md:sticky md:top-28 md:self-start md:py-6">

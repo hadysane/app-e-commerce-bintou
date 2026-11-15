@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatPrice, type Product } from "@/lib/products";
 import { stockQueryOptions } from "@/lib/stock";
 import { stockFor } from "@/lib/cart-logic";
+import { ProductImage } from "@/components/product-image";
 
 export function ProductCard({ product }: { product: Product }) {
   const { data: stock } = useQuery(stockQueryOptions);
@@ -10,13 +11,11 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <Link to="/produit/$slug" params={{ slug: product.slug }} className="group block">
       <div className="relative overflow-hidden rounded-sm bg-muted">
-        <img
+        <ProductImage
           src={product.image}
           alt={product.name}
           loading="lazy"
-          width={768}
-          height={1024}
-          className="aspect-[3/4] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          className="aspect-[3/4] w-full transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
         {soldOut && (
           <span className="text-eyebrow absolute right-3 top-3 rounded-sm bg-foreground px-2.5 py-1 text-background">
