@@ -3,11 +3,11 @@ import { CATEGORIES, PRODUCTS, type Category } from "@/lib/products";
 import { ProductCard } from "@/components/product-card";
 import { cn } from "@/lib/utils";
 
-type BoutiqueSearch = { cat?: Category };
+type BoutiqueSearch = { cat?: Category | undefined };
 
 export const Route = createFileRoute("/boutique")({
   validateSearch: (search: Record<string, unknown>): BoutiqueSearch => {
-    const cat = search.cat;
+    const cat = search["cat"];
     return CATEGORIES.some((c) => c.value === cat) ? { cat: cat as Category } : {};
   },
   head: () => ({
