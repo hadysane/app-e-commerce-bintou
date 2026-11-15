@@ -10,7 +10,7 @@ export async function stripeRequest<T>(path: string, method: "GET" | "POST" = "G
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: method === "POST" && params ? new URLSearchParams(params).toString() : undefined,
+    body: method === "POST" && params ? new URLSearchParams(params).toString() : null,
   });
   const json = (await res.json()) as T & { error?: { message?: string } };
   if (!res.ok) {
