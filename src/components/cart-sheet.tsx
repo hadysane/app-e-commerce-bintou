@@ -1,13 +1,43 @@
 import { Link } from "@tanstack/react-router";
-import { Minus, Plus, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Loader2, Minus, Plus, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { formatPrice, getProduct } from "@/lib/products";
+import { stockQueryOptions } from "@/lib/stock";
+import { stockFor } from "@/lib/cart-logic";
+import { createCheckout } from "@/lib/shop.functions";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 export function CartSheet() {
   const { lines, isOpen, setOpen, setQty, subtotal, count } = useCart();
+  const { data: stock, refetch } = useQuery({ ...stockQueryOptions, enabled: isOpen });
+  const startCheckout = useServerFn(createCheckout);
+  const [loading, setLoading] = useState(false);
+
+  const overStock = stock !== undefined && lines.some((l) => l.qty > stockFor(stock, l.slug, l.size));
+
+  async function checkout() {
+    setLoading(true);
+    try {
+      const res = await startCheckout({ data: { lines, origin: window.location.origin } });
+      if ("error" in res) {
+        toast.error(res.error);
+        void refetch();
+        return;
+      }
+      // Stripe's payment page cannot open inside a frame (e.g. the editor preview).
+      if (window.self !== window.top) window.open(res.url, "_blank", "noopener");
+      else window.location.assign(res.url);
+    } catch {
+      toast.error("Le paiement n'a pas pu démarrer. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
@@ -32,6 +62,8 @@ export function CartSheet() {
               {lines.map((line) => {
                 const product = getProduct(line.slug);
                 if (!product) return null;
+                const available = stock === undefined ? undefined : stockFor(stock, line.slug, line.size);
+                const atMax = available !== undefined && line.qty >= available;
                 return (
                   <li key={`${line.slug}-${line.size}`} className="flex gap-4 py-5">
                     <img src={product.image} alt={product.name} loading="lazy" width={768} height={1024} className="h-28 w-21 rounded-sm object-cover" />
@@ -40,6 +72,10 @@ export function CartSheet() {
                         <div>
                           <p className="font-display text-lg leading-tight">{product.name}</p>
                           <p className="text-xs text-muted-foreground">Taille : {line.size}</p>
+                          {available === 0 && <p className="mt-1 text-xs text-destructive">Épuisé — retirez cet article</p>}
+                          {available !== undefined && available > 0 && line.qty > available && (
+                            <p className="mt-1 text-xs text-destructive">Plus que {available} en stock</p>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -56,7 +92,13 @@ export function CartSheet() {
                             <Minus className="size-3" />
                           </button>
                           <span className="w-6 text-center text-sm">{line.qty}</span>
-                          <button type="button" aria-label="Augmenter" className="p-2 hover:text-primary" onClick={() => setQty(line.slug, line.size, line.qty + 1)}>
+                          <button
+                            type="button"
+                            aria-label="Augmenter"
+                            disabled={atMax}
+                            className="p-2 hover:text-primary disabled:opacity-30"
+                            onClick={() => setQty(line.slug, line.size, line.qty + 1)}
+                          >
                             <Plus className="size-3" />
                           </button>
                         </div>
@@ -76,18 +118,10 @@ export function CartSheet() {
               <span className="text-sm text-muted-foreground">Sous-total</span>
               <span className="font-display text-2xl">{formatPrice(subtotal)}</span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Livraison calculée à l'étape suivante.</p>
-            <Button
-              variant="sun"
-              size="xl"
-              className="mt-5 w-full"
-              onClick={() =>
-                toast("Le paiement en ligne arrive très bientôt", {
-                  description: "Votre panier est conservé sur cet appareil.",
-                })
-              }
-            >
-              Passer commande
+            <p className="mt-1 text-xs text-muted-foreground">Paiement sécurisé par carte via Stripe.</p>
+            <Button variant="sun" size="xl" className="mt-5 w-full" disabled={loading || overStock} onClick={checkout}>
+              {loading ? <Loader2 className="animate-spin" /> : null}
+              {overStock ? "Ajustez votre panier" : "Payer ma commande"}
             </Button>
           </div>
         )}

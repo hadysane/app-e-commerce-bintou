@@ -1,5 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { stockQueryOptions } from "@/lib/stock";
+import { stockFor } from "@/lib/cart-logic";
 import { ArrowLeft, Truck, Scissors, RefreshCw } from "lucide-react";
 import { CATEGORIES, PRODUCTS, formatPrice, getProduct } from "@/lib/products";
 import { useCart } from "@/lib/cart";
@@ -8,9 +12,10 @@ import { ProductCard } from "@/components/product-card";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/produit/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params, context }) => {
     const product = getProduct(params.slug);
     if (!product) throw notFound();
+    await context.queryClient.ensureQueryData(stockQueryOptions).catch(() => undefined);
     return { product };
   },
   head: ({ loaderData }) => {
@@ -43,9 +48,13 @@ export const Route = createFileRoute("/produit/$slug")({
 
 function ProductPage() {
   const { product } = Route.useLoaderData();
-  const { add } = useCart();
+  const { add, lines } = useCart();
+  const { data: stock } = useQuery(stockQueryOptions);
   const single = product.sizes.length === 1;
   const [size, setSize] = useState<string | null>(single ? (product.sizes[0] ?? null) : null);
+  const left = (s: string) => stockFor(stock, product.slug, s);
+  const allSoldOut = stock !== undefined && product.sizes.every((s) => left(s) === 0);
+  const selectedLeft = size ? left(size) : 0;
   const [error, setError] = useState(false);
   const category = CATEGORIES.find((c) => c.value === product.category)!;
   const related = PRODUCTS.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
@@ -71,40 +80,63 @@ function ProductPage() {
           <div className="mt-8">
             <p className="text-eyebrow">Taille</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {product.sizes.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setSize(s);
-                    setError(false);
-                  }}
-                  aria-pressed={size === s}
-                  className={cn(
-                    "min-w-12 rounded-sm border px-4 py-2.5 text-sm transition-colors",
-                    size === s ? "border-foreground bg-foreground text-background" : "border-border hover:border-foreground",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
+              {product.sizes.map((s) => {
+                const soldOut = stock !== undefined && left(s) === 0;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={soldOut}
+                    onClick={() => {
+                      setSize(s);
+                      setError(false);
+                    }}
+                    aria-pressed={size === s}
+                    aria-label={soldOut ? `${s} — épuisé` : s}
+                    className={cn(
+                      "relative min-w-12 rounded-sm border px-4 py-2.5 text-sm transition-colors",
+                      soldOut
+                        ? "cursor-not-allowed border-dashed border-border text-muted-foreground line-through"
+                        : size === s
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border hover:border-foreground",
+                    )}
+                  >
+                    {s}
+                    {soldOut && (
+                      <span className="absolute -top-2 right-1 rounded-sm bg-muted px-1 text-[9px] uppercase tracking-wider no-underline">
+                        Épuisé
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
             {error && <p className="mt-2 text-sm text-destructive">Choisissez une taille.</p>}
+            {size && selectedLeft > 0 && selectedLeft <= 3 && (
+              <p className="mt-2 text-sm text-primary">Plus que {selectedLeft} en stock</p>
+            )}
           </div>
 
           <Button
             variant="sun"
             size="xl"
             className="mt-8 w-full"
+            disabled={allSoldOut}
             onClick={() => {
               if (!size) {
                 setError(true);
                 return;
               }
+              const inCart = lines.find((l) => l.slug === product.slug && l.size === size)?.qty ?? 0;
+              if (stock !== undefined && inCart >= left(size)) {
+                toast("Vous avez déjà tout le stock disponible de cette taille dans votre panier.");
+                return;
+              }
               add(product.slug, size);
             }}
           >
-            Ajouter au panier
+            {allSoldOut ? "Épuisé" : "Ajouter au panier"}
           </Button>
 
           <ul className="mt-10 space-y-4 border-t border-border pt-8 text-sm">

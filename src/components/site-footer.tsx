@@ -25,6 +25,7 @@ export function SiteFooter() {
           <ul className="mt-4 space-y-2 text-sm opacity-90">
             <li><Link to="/a-propos" className="hover:text-saffron">Notre histoire</Link></li>
             <li><Link to="/contact" className="hover:text-saffron">Contact</Link></li>
+            <li><Link to="/admin" className="hover:text-saffron">Espace équipe</Link></li>
           </ul>
         </div>
       </div>

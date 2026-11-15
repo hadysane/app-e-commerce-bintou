@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CATEGORIES, PRODUCTS, type Category } from "@/lib/products";
 import { ProductCard } from "@/components/product-card";
+import { stockQueryOptions } from "@/lib/stock";
 import { cn } from "@/lib/utils";
 
 type BoutiqueSearch = { cat?: Category | undefined };
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/boutique")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(stockQueryOptions).catch(() => undefined),
   component: Boutique,
 });
 
