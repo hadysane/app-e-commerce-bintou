@@ -4,6 +4,7 @@ import hero from "@/assets/hero-bintou.jpg";
 import atelier from "@/assets/atelier.jpg";
 import { PRODUCTS, CATEGORIES } from "@/lib/products";
 import { ProductCard } from "@/components/product-card";
+import { stockQueryOptions } from "@/lib/stock";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(stockQueryOptions).catch(() => undefined),
   component: Home,
 });
 

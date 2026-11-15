@@ -14,16 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          amount_total: number
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          id: string
+          items: Json
+          paid_at: string | null
+          shipping: Json | null
+          status: string
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_total: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          items: Json
+          paid_at?: string | null
+          shipping?: Json | null
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_total?: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          id?: string
+          items?: Json
+          paid_at?: string | null
+          shipping?: Json | null
+          status?: string
+          stripe_session_id?: string | null
+        }
+        Relationships: []
+      }
+      product_stock: {
+        Row: {
+          product_slug: string
+          quantity: number
+          size: string
+          updated_at: string
+        }
+        Insert: {
+          product_slug: string
+          quantity?: number
+          size: string
+          updated_at?: string
+        }
+        Update: {
+          product_slug?: string
+          quantity?: number
+          size?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_invites: {
+        Row: {
+          created_at: string
+          email: string
+          invited_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          invited_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          invited_by?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      fulfill_order: {
+        Args: {
+          _amount: number
+          _email: string
+          _name: string
+          _session_id: string
+          _shipping: Json
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +267,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const

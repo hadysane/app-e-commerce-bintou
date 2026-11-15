@@ -26,3 +26,28 @@ describe("panier", () => {
     expect(cartSubtotal(lines)).toBe(217);
   });
 });
+
+import { stockFor, validateCart } from "./cart-logic";
+
+describe("stock", () => {
+  const stock = { "robe-awa|M": 3, "jupe-ama|XL": 0 };
+
+  it("une taille sans ligne de stock compte comme épuisée", () => {
+    expect(stockFor(stock, "robe-awa", "L")).toBe(0);
+  });
+
+  it("refuse de commander plus que le stock disponible", () => {
+    const r = validateCart([{ slug: "robe-awa", size: "M", qty: 4 }], stock);
+    expect(r.ok).toBe(false);
+  });
+
+  it("refuse une taille épuisée", () => {
+    const r = validateCart([{ slug: "jupe-ama", size: "XL", qty: 1 }], stock);
+    expect(r).toEqual({ ok: false, message: "Jupe Ama (XL) est épuisé." });
+  });
+
+  it("accepte une commande dans la limite du stock, avec le prix du catalogue", () => {
+    const r = validateCart([{ slug: "robe-awa", size: "M", qty: 3 }], stock);
+    expect(r.ok && r.total).toBe(267);
+  });
+});
