@@ -1,3 +1,7 @@
+-- RLS policies call has_role as the requesting role; grant it explicitly so this works
+-- even when the project does not expose new objects to the API roles by default.
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO anon, authenticated, service_role;
+
 -- Catalogue: one row per product, managed from /admin
 CREATE TABLE public.products (
   slug text PRIMARY KEY CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),

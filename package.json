@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "start": "node .output/server/index.mjs",
     "db:link": "supabase link",
-    "db:push": "supabase db push",
+    "db:push": "supabase db push --linked",
     "db:types": "supabase gen types typescript --linked > src/integrations/supabase/types.ts",
     "seed:images": "node scripts/seed-images.mjs"
   },
