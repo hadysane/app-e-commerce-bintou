@@ -3,18 +3,9 @@
   "configurations": [
     {
       "name": "bintou-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev",
-        "--",
-        "--port",
-        "8080"
-      ],
-      "port": 8080,
-      "env": {
-        "NODE_OPTIONS": "--experimental-websocket"
-      }
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", ". \"$HOME/.nvm/nvm.sh\"; nvm use >/dev/null; exec npm run dev -- --port 8080"],
+      "port": 8080
     }
   ]
 }
