@@ -37,3 +37,6 @@ supabase/.branches/
 *.njsproj
 *.sln
 *.sw?
+
+# Vercel
+.vercel/
