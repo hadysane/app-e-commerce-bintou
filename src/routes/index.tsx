@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import hero from "@/assets/hero-bintou.jpg";
 import atelier from "@/assets/atelier.jpg";
-import { PRODUCTS, CATEGORIES } from "@/lib/products";
+import { useQuery } from "@tanstack/react-query";
+import { CATEGORIES } from "@/lib/products";
 import { ProductCard } from "@/components/product-card";
-import { stockQueryOptions } from "@/lib/stock";
+import { catalogQueryOptions, stockQueryOptions } from "@/lib/stock";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -18,18 +19,20 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(stockQueryOptions).catch(() => undefined),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(catalogQueryOptions),
+      context.queryClient.ensureQueryData(stockQueryOptions),
+    ]).catch(() => undefined),
   component: Home,
 });
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  femme: PRODUCTS.find((p) => p.slug === "robe-awa")!.image,
-  homme: PRODUCTS.find((p) => p.slug === "ensemble-moussa")!.image,
-  accessoires: PRODUCTS.find((p) => p.slug === "duo-dioula")!.image,
-};
-
 function Home() {
-  const featured = PRODUCTS.filter((p) => p.isNew).concat(PRODUCTS.filter((p) => !p.isNew)).slice(0, 4);
+  const { data: products = [] } = useQuery(catalogQueryOptions);
+  const featured = products.filter((p) => p.isNew).concat(products.filter((p) => !p.isNew)).slice(0, 4);
+  // Each category tile shows its first product with a photo.
+  const categoryImage = (category: string) =>
+    products.find((p) => p.category === category && p.image)?.image ?? hero;
 
   return (
     <>
@@ -73,7 +76,7 @@ function Home() {
               className="group relative block overflow-hidden rounded-sm"
             >
               <img
-                src={CATEGORY_IMAGES[c.value]}
+                src={categoryImage(c.value)}
                 alt={c.label}
                 loading="lazy"
                 width={768}

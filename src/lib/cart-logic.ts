@@ -1,4 +1,4 @@
-import { getProduct } from "./products";
+import { findProduct, type Product } from "./products";
 
 export type CartLine = { slug: string; size: string; qty: number };
 
@@ -19,8 +19,8 @@ export function cartCount(lines: CartLine[]): number {
   return lines.reduce((n, l) => n + l.qty, 0);
 }
 
-export function cartSubtotal(lines: CartLine[]): number {
-  return lines.reduce((sum, l) => sum + (getProduct(l.slug)?.price ?? 0) * l.qty, 0);
+export function cartSubtotal(lines: CartLine[], products: Product[] | undefined): number {
+  return lines.reduce((sum, l) => sum + (findProduct(products, l.slug)?.price ?? 0) * l.qty, 0);
 }
 
 export type StockMap = Record<string, number>;
@@ -40,13 +40,13 @@ export type CartCheck =
   | { ok: true; items: CheckedItem[]; total: number }
   | { ok: false; message: string };
 
-/** Server-side check before payment: every line must exist and be within stock. */
-export function validateCart(lines: CartLine[], stock: StockMap): CartCheck {
+/** Server-side check before payment: every line must be an active product, size and stock. */
+export function validateCart(lines: CartLine[], stock: StockMap, products: Product[]): CartCheck {
   if (lines.length === 0) return { ok: false, message: "Votre panier est vide." };
   const items: CheckedItem[] = [];
   for (const line of lines) {
-    const product = getProduct(line.slug);
-    if (!product || !product.sizes.includes(line.size) || !Number.isInteger(line.qty) || line.qty < 1) {
+    const product = findProduct(products, line.slug);
+    if (!product || !product.active || !product.sizes.includes(line.size) || !Number.isInteger(line.qty) || line.qty < 1) {
       return { ok: false, message: "Un article de votre panier n'est plus disponible." };
     }
     const available = stockFor(stock, line.slug, line.size);

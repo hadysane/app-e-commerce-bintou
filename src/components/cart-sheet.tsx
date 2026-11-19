@@ -5,16 +5,19 @@ import { Loader2, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
-import { formatPrice, getProduct } from "@/lib/products";
-import { stockQueryOptions } from "@/lib/stock";
-import { stockFor } from "@/lib/cart-logic";
+import { findProduct, formatPrice } from "@/lib/products";
+import { catalogQueryOptions, stockQueryOptions } from "@/lib/stock";
+import { cartSubtotal, stockFor } from "@/lib/cart-logic";
 import { createCheckout } from "@/lib/shop.functions";
 import { Button } from "@/components/ui/button";
+import { ProductImage } from "@/components/product-image";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 export function CartSheet() {
-  const { lines, isOpen, setOpen, setQty, subtotal, count } = useCart();
+  const { lines, isOpen, setOpen, setQty, count } = useCart();
   const { data: stock, refetch } = useQuery({ ...stockQueryOptions, enabled: isOpen });
+  const { data: products } = useQuery({ ...catalogQueryOptions, enabled: isOpen });
+  const subtotal = cartSubtotal(lines, products);
   const startCheckout = useServerFn(createCheckout);
   const [loading, setLoading] = useState(false);
 
@@ -60,13 +63,13 @@ export function CartSheet() {
           ) : (
             <ul className="divide-y divide-border">
               {lines.map((line) => {
-                const product = getProduct(line.slug);
+                const product = findProduct(products, line.slug);
                 if (!product) return null;
                 const available = stock === undefined ? undefined : stockFor(stock, line.slug, line.size);
                 const atMax = available !== undefined && line.qty >= available;
                 return (
                   <li key={`${line.slug}-${line.size}`} className="flex gap-4 py-5">
-                    <img src={product.image} alt={product.name} loading="lazy" width={768} height={1024} className="h-28 w-21 rounded-sm object-cover" />
+                    <ProductImage src={product.image} alt={product.name} loading="lazy" className="h-28 w-21 rounded-sm" />
                     <div className="flex flex-1 flex-col">
                       <div className="flex items-start justify-between gap-2">
                         <div>

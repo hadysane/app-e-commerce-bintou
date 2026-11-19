@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       orders: {
@@ -72,6 +97,65 @@ export type Database = {
           size?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_product_slug_fkey"
+            columns: ["product_slug"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string
+          fabric: string
+          image_path: string | null
+          is_new: boolean
+          name: string
+          position: number
+          price_cents: number
+          short: string
+          sizes: string[]
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string
+          fabric?: string
+          image_path?: string | null
+          is_new?: boolean
+          name: string
+          position?: number
+          price_cents: number
+          short?: string
+          sizes: string[]
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string
+          fabric?: string
+          image_path?: string | null
+          is_new?: boolean
+          name?: string
+          position?: number
+          price_cents?: number
+          short?: string
+          sizes?: string[]
+          slug?: string
+          updated_at?: string
+        }
         Relationships: []
       }
       team_invites: {
@@ -128,13 +212,6 @@ export type Database = {
           _name: string
           _session_id: string
           _shipping: Json
-        }
-        Returns: boolean
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
         }
         Returns: boolean
       }
@@ -266,6 +343,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin"],

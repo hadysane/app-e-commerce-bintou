@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stockKey, validateCart, type StockMap } from "./cart-logic";
+import { toProduct, type Product } from "./products";
 
 const SHIPPING_COUNTRIES = ["FR", "BE", "CH", "LU", "DE", "ES", "IT", "NL", "PT", "GB", "CA", "US", "SN", "CI", "ML", "CM", "GN"];
 
@@ -35,6 +36,23 @@ async function readStock(): Promise<StockMap> {
 
 export const getStock = createServerFn({ method: "GET" }).handler(async () => readStock());
 
+/** Active products only: RLS hides inactive ones from the public key. */
+async function readCatalog(): Promise<Product[]> {
+  const { data, error } = await publicClient()
+    .from("products")
+    .select("*")
+    .eq("active", true)
+    .order("position")
+    .order("name");
+  if (error) {
+    console.error("[catalog]", error.message);
+    throw new Error("Catalogue indisponible");
+  }
+  return data.map(toProduct);
+}
+
+export const getCatalog = createServerFn({ method: "GET" }).handler(async () => readCatalog());
+
 const checkoutInput = z.object({
   lines: z
     .array(z.object({ slug: z.string().max(80), size: z.string().max(40), qty: z.number().int().min(1).max(50) }))
@@ -46,7 +64,8 @@ const checkoutInput = z.object({
 export const createCheckout = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => checkoutInput.parse(input))
   .handler(async ({ data }): Promise<{ url: string } | { error: string }> => {
-    const check = validateCart(data.lines, await readStock());
+    const [stock, products] = await Promise.all([readStock(), readCatalog()]);
+    const check = validateCart(data.lines, stock, products);
     if (!check.ok) return { error: check.message };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -128,7 +147,14 @@ export const confirmCheckout = createServerFn({ method: "POST" })
 export const reconcileOrders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    // RLS lets a signed-in user read their own role row only.
+    const { data: role } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isAdmin = !!role;
     if (!isAdmin) throw new Error("Accès refusé");
     const { data: pending } = await context.supabase
       .from("orders")

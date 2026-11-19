@@ -5,21 +5,23 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Loader2, LogOut, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCTS, formatPrice } from "@/lib/products";
+import { formatPrice, toProduct } from "@/lib/products";
 import { stockKey } from "@/lib/cart-logic";
 import { reconcileOrders } from "@/lib/shop.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { ProductImage } from "@/components/product-image";
+import { ProductsTab, adminProductsQueryOptions } from "@/components/admin-products";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
       { title: "Gestion de la boutique — Bintou" },
-      { name: "description", content: "Stocks, commandes et équipe Bintou." },
+      { name: "description", content: "Produits, stocks, commandes et équipe Bintou." },
       { property: "og:title", content: "Gestion de la boutique — Bintou" },
-      { property: "og:description", content: "Stocks, commandes et équipe Bintou." },
+      { property: "og:description", content: "Produits, stocks, commandes et équipe Bintou." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -36,7 +38,12 @@ function AdminPage() {
   const { data: isAdmin, isLoading } = useQuery({
     queryKey: ["is-admin", user.id],
     queryFn: async () => {
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
       return !!data;
     },
   });
@@ -71,12 +78,16 @@ function AdminPage() {
           </p>
         </div>
       ) : (
-        <Tabs defaultValue="stock" className="mt-10">
+        <Tabs defaultValue="products" className="mt-10">
           <TabsList>
+            <TabsTrigger value="products">Produits</TabsTrigger>
             <TabsTrigger value="stock">Stocks</TabsTrigger>
             <TabsTrigger value="orders">Commandes</TabsTrigger>
             <TabsTrigger value="team">Équipe</TabsTrigger>
           </TabsList>
+          <TabsContent value="products" className="mt-8">
+            <ProductsTab />
+          </TabsContent>
           <TabsContent value="stock" className="mt-8"><StockTab /></TabsContent>
           <TabsContent value="orders" className="mt-8"><OrdersTab /></TabsContent>
           <TabsContent value="team" className="mt-8"><TeamTab currentUserId={user.id} /></TabsContent>
@@ -90,6 +101,8 @@ function AdminPage() {
 
 function StockTab() {
   const queryClient = useQueryClient();
+  const { data: rows, isLoading: productsLoading } = useQuery(adminProductsQueryOptions);
+  const products = (rows ?? []).map(toProduct);
   const { data: stock, isLoading } = useQuery({
     queryKey: ["admin-stock"],
     queryFn: async () => {
@@ -104,7 +117,7 @@ function StockTab() {
 
   const save = useMutation({
     mutationFn: async (slug: string) => {
-      const product = PRODUCTS.find((p) => p.slug === slug)!;
+      const product = products.find((p) => p.slug === slug)!;
       const rows = product.sizes.map((size) => {
         const raw = draft[stockKey(slug, size)];
         const quantity = raw === undefined ? (stock?.[stockKey(slug, size)] ?? 0) : Number(raw);
@@ -124,19 +137,21 @@ function StockTab() {
     onError: (e) => toast.error(e instanceof Error && e.message === "Quantité invalide" ? "Saisissez des nombres entiers positifs." : "Enregistrement impossible."),
   });
 
-  if (isLoading) return <Loader2 className="size-6 animate-spin text-primary" />;
+  if (isLoading || productsLoading) return <Loader2 className="size-6 animate-spin text-primary" />;
 
   return (
     <div className="space-y-4">
-      {PRODUCTS.map((p) => {
+      {products.map((p) => {
         const dirty = p.sizes.some((s) => draft[stockKey(p.slug, s)] !== undefined);
         const total = p.sizes.reduce((n, s) => n + (stock?.[stockKey(p.slug, s)] ?? 0), 0);
         return (
           <div key={p.slug} className="flex flex-col gap-5 rounded-sm border border-border bg-card p-5 md:flex-row md:items-center">
             <div className="flex items-center gap-4 md:w-64">
-              <img src={p.image} alt="" width={768} height={1024} loading="lazy" className="h-16 w-12 rounded-sm object-cover" />
+              <ProductImage src={p.image} alt="" loading="lazy" className="h-16 w-12 rounded-sm" />
               <div>
-                <p className="font-display text-lg leading-tight">{p.name}</p>
+                <p className="font-display text-lg leading-tight">
+                  {p.name} {!p.active && <span className="text-xs text-muted-foreground">(masqué)</span>}
+                </p>
                 <p className="text-xs text-muted-foreground">{formatPrice(p.price)} · {total} en stock</p>
               </div>
             </div>

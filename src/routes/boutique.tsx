@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CATEGORIES, PRODUCTS, type Category } from "@/lib/products";
+import { useQuery } from "@tanstack/react-query";
+import { CATEGORIES, type Category } from "@/lib/products";
 import { ProductCard } from "@/components/product-card";
-import { stockQueryOptions } from "@/lib/stock";
+import { catalogQueryOptions, stockQueryOptions } from "@/lib/stock";
 import { cn } from "@/lib/utils";
 
 type BoutiqueSearch = { cat?: Category | undefined };
@@ -14,20 +15,32 @@ export const Route = createFileRoute("/boutique")({
   head: () => ({
     meta: [
       { title: "Boutique — Bintou" },
-      { name: "description", content: "Toute la collection Bintou : robes en wax, boubous en bazin, chemises kente et accessoires africains." },
+      {
+        name: "description",
+        content:
+          "Toute la collection Bintou : robes en wax, boubous en bazin, chemises kente et accessoires africains.",
+      },
       { property: "og:title", content: "Boutique — Bintou" },
-      { property: "og:description", content: "Robes en wax, boubous en bazin, chemises kente et accessoires africains." },
+      {
+        property: "og:description",
+        content: "Robes en wax, boubous en bazin, chemises kente et accessoires africains.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(stockQueryOptions).catch(() => undefined),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(catalogQueryOptions),
+      context.queryClient.ensureQueryData(stockQueryOptions),
+    ]).catch(() => undefined),
   component: Boutique,
 });
 
 function Boutique() {
   const { cat } = Route.useSearch();
-  const products = cat ? PRODUCTS.filter((p) => p.category === cat) : PRODUCTS;
+  const { data: all = [] } = useQuery(catalogQueryOptions);
+  const products = cat ? all.filter((p) => p.category === cat) : all;
   const title = cat ? CATEGORIES.find((c) => c.value === cat)!.label : "Toute la collection";
 
   const filters: { label: string; value: Category | undefined }[] = [
