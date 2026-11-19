@@ -147,7 +147,14 @@ export const confirmCheckout = createServerFn({ method: "POST" })
 export const reconcileOrders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    // RLS lets a signed-in user read their own role row only.
+    const { data: role } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isAdmin = !!role;
     if (!isAdmin) throw new Error("Accès refusé");
     const { data: pending } = await context.supabase
       .from("orders")

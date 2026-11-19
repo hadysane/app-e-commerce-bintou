@@ -29,6 +29,7 @@ Créez ensuite votre compte sur `/auth` : **le premier compte devient administra
 | `npm test` | Tests |
 | `npm run db:push` | Applique les nouvelles migrations de `supabase/migrations/` |
 | `npm run db:types` | Régénère les types TypeScript de la base |
+| `npm run db:check` | Audit de sécurité de la base (Security Advisor de Supabase) |
 | `npm run seed:images` | Renvoie les photos de départ |
 
 ## Structure
